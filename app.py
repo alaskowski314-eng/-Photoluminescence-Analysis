@@ -7,7 +7,7 @@ from datetime import datetime
 from google.oauth2.service_account import Credentials
 
 # Import Twojego skryptu do obsługi Google Drive
-import workspace
+import gdrive_sync.py
 
 # --- 1. KONFIGURACJA STRONY (MUSI BYĆ JAKO PIERWSZA KOMENDA ST) ---
 st.set_page_config(page_title="PL Analysis Pro", layout="wide", page_icon="🔬")
