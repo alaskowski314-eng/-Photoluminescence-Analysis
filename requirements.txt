@@ -6,3 +6,4 @@ PyYAML
 gspread
 google-auth
 google-api-python-client
+plotly
