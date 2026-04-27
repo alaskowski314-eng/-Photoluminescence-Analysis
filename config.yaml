@@ -1,6 +1,3 @@
-# Ustawienia ścieżek
-paths:
-  data_folder: "/Users/laskowski/Artur/Grupa Badawcza/Analiza/d260416_JM_MK_AL1"
 
 # Definicje zakresów energetycznych (eV) dla 4 typów stanów
 energy_ranges:
