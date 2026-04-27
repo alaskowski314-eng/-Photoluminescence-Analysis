@@ -6,13 +6,11 @@ import streamlit as st
 from datetime import datetime
 from google.oauth2.service_account import Credentials
 
-# Import Twojego skryptu do obsługi Google Drive
-import gdrive_sync
-
 # --- 1. KONFIGURACJA STRONY (MUSI BYĆ JAKO PIERWSZA KOMENDA ST) ---
 st.set_page_config(page_title="PL Analysis Pro", layout="wide", page_icon="🔬")
 
 # --- 2. IMPORTY MODUŁÓW WEWNĘTRZNYCH ---
+# Tutaj importujemy wszystko z folderu "modules", w tym nasz nowy gdrive_sync
 from modules import (
     data_loader,
     tab_eksploracja,
@@ -21,6 +19,7 @@ from modules import (
     tab_łowca_defektów,
     tab_masowy_fit,
     tab_savgol,
+    gdrive_sync  # <-- POPRAWNY IMPORT Z FOLDERU MODULES
 )
 
 # --- 3. INICJALIZACJA STANÓW SESJI ---
@@ -32,8 +31,6 @@ if 'processed_data' not in st.session_state: st.session_state.processed_data = N
 if 'current_wl' not in st.session_state: st.session_state.current_wl = 615.0
 if 'click_x' not in st.session_state: st.session_state.click_x = 0
 if 'click_y' not in st.session_state: st.session_state.click_y = 0
-
-# NOWA LINIJKA:
 if 'axis_mode' not in st.session_state: st.session_state.axis_mode = "Energia (eV)"
 
 # --- 4. BEZPIECZNE LOGOWANIE DO SHEETS ---
@@ -65,7 +62,7 @@ if not st.session_state.logged_in:
     
     u_email = st.text_input("Twój e-mail:", placeholder="nazwisko@uczelnia.pl")
     
-    if st.button("Wejdź do aplikacji", key="btn_login", use_container_width=True):
+    if st.button("Wejdź do aplikacji", key="btn_login", width='stretch'):
         if "@" in u_email and "." in u_email:
             with st.spinner("Autoryzacja..."):
                 log_user_to_sheets(u_email)
@@ -86,31 +83,33 @@ st.sidebar.success(f"👤 Zalogowano: {display_email}")
 
 # SEKCJA: CHMURA I PLIKI
 st.sidebar.markdown("---")
-st.sidebar.header("☁️ gdrive_sync.py")
+st.sidebar.header("☁️ Workspace (Google Drive)")
 col1, col2 = st.sidebar.columns(2)
 
-# --- PRZYCISK POBIERANIA (naprawiony) ---
+# --- PRZYCISK POBIERANIA ---
 if col1.button("⬇️ Pobierz", key="btn_pobierz_drive", width='stretch'):
     with st.spinner("Pobieranie danych z chmury..."):
-        st.session_state.cloud_files = gdrive_sync.py.load_gdrive_sync.py(st.session_state.user_email)
+        # Poprawione wywołanie funkcji
+        st.session_state.cloud_files = gdrive_sync.load_workspace(st.session_state.user_email)
         st.sidebar.success(f"Pobrano {len(st.session_state.cloud_files)} plików.")
 
-# --- WGRYWANIE LOKALNE (naprawione) ---
+# --- WGRYWANIE LOKALNE ---
 local_files = st.sidebar.file_uploader(
     "Wgraj .dat z dysku:", 
     accept_multiple_files=True, 
     type=['dat'],
-    key="local_uploader_sidebar"  # <-- TO BYŁ TEN BRAKUJĄCY KLUCZ
+    key="local_uploader_sidebar"
 )
 
-# --- PRZYCISK WYSYŁANIA (naprawiony) ---
+# --- PRZYCISK WYSYŁANIA ---
 if local_files and col2.button("⬆️ Wyślij", key="btn_sync_drive", width='stretch'):
-    if hasattr(gdrive_sync.py, 'sync_files'):
+    # Poprawione odwołania do modułu
+    if hasattr(gdrive_sync, 'sync_files'):
         with st.spinner("Synchronizacja z Google Drive..."):
-            gdrive_sync.py.sync_files(st.session_state.user_email, local_files)
+            gdrive_sync.sync_files(st.session_state.user_email, local_files)
             st.sidebar.success("Zapisano w chmurze!")
     else:
-        st.sidebar.error("Błąd: Funkcja sync_files nieodnaleziona w pliku gdrive_sync.py.py")
+        st.sidebar.error("Błąd: Funkcja sync_files nieodnaleziona w pliku gdrive_sync.py")
 
 # POŁĄCZENIE PLIKÓW (Lokalne + Chmura)
 all_files = (local_files if local_files else []) + st.session_state.cloud_files
@@ -165,4 +164,4 @@ if dat_files:
     with tabs[5]: 
         tab_savgol.render(cube, wl, energy_ev, total_int, grid_size, config)
 else:
-    st.info("👋 Witaj! Aby rozpocząć, wgraj pliki `.dat` z komputera lub pobierz je ze swojego gdrive_sync.py'a w chmurze.")
+    st.info("👋 Witaj! Aby rozpocząć, wgraj pliki `.dat` z komputera lub pobierz je ze swojego Workspace'a w chmurze.")
