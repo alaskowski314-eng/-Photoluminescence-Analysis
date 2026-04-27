@@ -7,7 +7,7 @@ from datetime import datetime
 from google.oauth2.service_account import Credentials
 
 # Import Twojego skryptu do obsługi Google Drive
-import gdrive_sync.py
+import gdrive_sync
 
 # --- 1. KONFIGURACJA STRONY (MUSI BYĆ JAKO PIERWSZA KOMENDA ST) ---
 st.set_page_config(page_title="PL Analysis Pro", layout="wide", page_icon="🔬")
@@ -21,7 +21,6 @@ from modules import (
     tab_łowca_defektów,
     tab_masowy_fit,
     tab_savgol,
-    gdrive_sync
 )
 
 # --- 3. INICJALIZACJA STANÓW SESJI ---
