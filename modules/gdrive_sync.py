@@ -55,7 +55,7 @@ def sync_files(email, uploaded_files):
         query = f"name='{uf.name}' and '{folder_id}' in parents and trashed=false"
         res = service.files().list(q=query, fields="files(id)").execute()
         
-        media = MediaIoBaseUpload(io.BytesIO(file_bytes), mimetype='application/octet-stream', resumable=True)
+        media = MediaIoBaseUpload(io.BytesIO(file_bytes), mimetype='application/octet-stream', resumable=False)
         
         if res.get('files'):
             service.files().update(fileId=res['files'][0]['id'], media_body=media).execute()
