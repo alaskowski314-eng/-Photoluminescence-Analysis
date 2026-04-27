@@ -20,7 +20,8 @@ from modules import (
     tab_statystyki,
     tab_łowca_defektów,
     tab_masowy_fit,
-    tab_savgol
+    tab_savgol,
+    gdrive_sync
 )
 
 # --- 3. INICJALIZACJA STANÓW SESJI ---
