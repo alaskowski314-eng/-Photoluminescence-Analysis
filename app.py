@@ -84,19 +84,22 @@ st.sidebar.markdown("---")
 st.sidebar.header("☁️ Workspace")
 col1, col2 = st.sidebar.columns(2)
 
-if col1.button("⬇️ Pobierz", key="btn_pobierz_drive", use_container_width=True):
+# --- PRZYCISK POBIERANIA (naprawiony) ---
+if col1.button("⬇️ Pobierz", key="btn_pobierz_drive", width='stretch'):
     with st.spinner("Pobieranie danych z chmury..."):
         st.session_state.cloud_files = workspace.load_workspace(st.session_state.user_email)
         st.sidebar.success(f"Pobrano {len(st.session_state.cloud_files)} plików.")
 
+# --- WGRYWANIE LOKALNE (naprawione) ---
 local_files = st.sidebar.file_uploader(
     "Wgraj .dat z dysku:", 
     accept_multiple_files=True, 
     type=['dat'],
-    key="uploader_sidebar"
+    key="local_uploader_sidebar"  # <-- TO BYŁ TEN BRAKUJĄCY KLUCZ
 )
 
-if local_files and col2.button("⬆️ Wyślij", key="btn_sync_drive", use_container_width=True):
+# --- PRZYCISK WYSYŁANIA (naprawiony) ---
+if local_files and col2.button("⬆️ Wyślij", key="btn_sync_drive", width='stretch'):
     if hasattr(workspace, 'sync_files'):
         with st.spinner("Synchronizacja z Google Drive..."):
             workspace.sync_files(st.session_state.user_email, local_files)
@@ -108,6 +111,7 @@ if local_files and col2.button("⬆️ Wyślij", key="btn_sync_drive", use_conta
 all_files = (local_files if local_files else []) + st.session_state.cloud_files
 unique_dict = {f.name: f for f in all_files if f.name.endswith('.dat')}
 dat_files = list(unique_dict.values())
+
 
 # SEKCJA: MODEL MATEMATYCZNY
 st.sidebar.markdown("---")
