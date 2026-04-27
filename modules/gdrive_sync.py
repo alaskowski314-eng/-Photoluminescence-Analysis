@@ -4,7 +4,7 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload
 
-PARENT_FOLDER_ID = "1ylGjiavg_QQE2a0jIZW0TNOz_CibmIUN""
+PARENT_FOLDER_ID = "1ylGjiavg_QQE2a0jIZW0TNOz_CibmIUN"
 
 class CloudFile(io.BytesIO):
     """Klasa udająca plik wgrany przez Streamlit (ma atrybut .name)"""
