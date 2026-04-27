@@ -17,7 +17,7 @@ from modules import (
     tab_łowca_defektów,
     tab_masowy_fit,
     tab_savgol,
-    workspace  # Twój moduł do Google Drive
+    workspace  
 )
 
 # --- 3. FUNKCJA ZAPISUJĄCA DO GOOGLE SHEETS ---
