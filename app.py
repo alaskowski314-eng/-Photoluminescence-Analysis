@@ -5,10 +5,10 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime
 import numpy as np
 
-# --- 1. KONFIGURACJA STRONY (Musi być na samym początku!) ---
+# --- 1. KONFIGURACJA STRONY (Musi być PIERWSZA komenda) ---
 st.set_page_config(page_title="PL Analysis Pro", layout="wide", page_icon="🔬")
 
-# --- 2. IMPORTY MODUŁÓW ---
+# --- 2. IMPORTY TWOICH MODUŁÓW ---
 from modules import (
     data_loader,
     tab_eksploracja,
@@ -17,13 +17,38 @@ from modules import (
     tab_łowca_defektów,
     tab_masowy_fit,
     tab_savgol,
-    workspace  # Twój moduł do obsługi Google Drive
+    workspace  # Moduł Google Drive
 )
 
-# --- 3. FUNKCJA LOGOWANIA DO GOOGLE SHEETS ---
+# --- 3. INICJALIZACJA STANÓW SESJI (Zapobieganie AttributeError) ---
+def init_session_state():
+    # Dane logowania
+    if 'logged_in' not in st.session_state: st.session_state.logged_in = False
+    if 'user_email' not in st.session_state: st.session_state.user_email = ""
+    
+    # Dane plików
+    if 'cloud_files' not in st.session_state: st.session_state.cloud_files = []
+    if 'current_file_key' not in st.session_state: st.session_state.current_file_key = None
+    if 'processed_data' not in st.session_state: st.session_state.processed_data = None
+    
+    # Parametry widma (Dla tab_eksploracja)
+    if 'current_wl' not in st.session_state: st.session_state.current_wl = 615.0
+    if 'wl_slider' not in st.session_state: st.session_state.wl_slider = 615.0
+    if 'wl_number' not in st.session_state: st.session_state.wl_number = 615.0
+    
+    # Współrzędne kliknięć
+    if 'click_x' not in st.session_state: st.session_state.click_x = 0
+    if 'click_y' not in st.session_state: st.session_state.click_y = 0
+    if 'input_x' not in st.session_state: st.session_state.input_x = 0
+    if 'input_y' not in st.session_state: st.session_state.input_y = 0
+    
+    if 'axis_mode' not in st.session_state: st.session_state.axis_mode = "Energia (eV)"
+
+init_session_state()
+
+# --- 4. FUNKCJA LOGOWANIA DO GOOGLE SHEETS ---
 def log_user_to_sheets(email):
     try:
-        # Dane z Settings -> Secrets w Streamlit Cloud
         info = st.secrets["gcp_service_account"]
         creds = Credentials.from_service_account_info(info, scopes=[
             "https://www.googleapis.com/auth/spreadsheets",
@@ -31,7 +56,6 @@ def log_user_to_sheets(email):
         ])
         client = gspread.authorize(creds)
         
-        # ID Twojego arkusza (pamiętaj, aby udostępnić go mailowi z JSON-a!)
         sheet_id = "1qgqjbjxBTRZfca8LQMDInGgTbPLNBiFwBElVMLtBdWc"
         sheet = client.open_by_key(sheet_id).sheet1
         
@@ -39,122 +63,102 @@ def log_user_to_sheets(email):
         row = [now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S"), email]
         sheet.append_row(row)
     except Exception as e:
-        st.warning(f"Zalogowano lokalnie (Błąd zapisu w arkuszu: {e})")
+        print(f"Błąd zapisu do Sheets: {e}")
 
-# --- 4. BRAMKA LOGOWANIA ---
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
-
+# --- 5. BRAMKA LOGOWANIA ---
 if not st.session_state.logged_in:
     st.title("🔬 Photoluminescence Analysis System")
     st.markdown("---")
-    st.subheader("Autoryzacja użytkownika")
+    st.subheader("Weryfikacja dostępu")
     
-    user_email = st.text_input("Podaj e-mail akademicki / firmowy:", placeholder="user@domain.com")
+    u_email = st.text_input("Podaj adres e-mail (akademicki):", placeholder="nazwisko@uczelnia.pl")
     
-    if st.button("Uruchom system", use_container_width=True):
-        if "@" in user_email and "." in user_email:
-            with st.spinner("Rejestracja sesji w bazie..."):
-                log_user_to_sheets(user_email)
+    if st.button("Uruchom analizator", use_container_width=True):
+        if "@" in u_email and "." in u_email:
+            with st.spinner("Autoryzacja sesji..."):
+                log_user_to_sheets(u_email)
                 st.session_state.logged_in = True
-                st.session_state.user_email = user_email
+                st.session_state.user_email = u_email
                 st.rerun()
         else:
-            st.error("Wprowadź poprawny adres e-mail.")
+            st.error("Wymagany poprawny format adresu e-mail.")
     st.stop()
 
-# --- 5. KONFIGURACJA I STAN SESJI (PO ZALOGOWANIU) ---
+# --- 6. GŁÓWNA APLIKACJA (PO ZALOGOWANIU) ---
 with open("config.yaml", "r", encoding="utf-8") as f:
     config = yaml.safe_load(f)
 
-# Inicjalizacja zmiennych sesji
-for key in ['click_x', 'click_y', 'input_x', 'input_y']:
-    if key not in st.session_state: st.session_state[key] = 0
+st.title("🔬 Analiza Widm Fotoluminescencji")
 
-if 'axis_mode' not in st.session_state: st.session_state.axis_mode = "Energia (eV)"
-
-# --- 6. PANEL BOCZNY (WORKSPACE & FILTRY) ---
+# --- 7. PANEL BOCZNY (WORKSPACE & FILTRY) ---
 st.sidebar.title("🧬 Panel Sterowania")
-st.sidebar.info(f"👤 Użytkownik: {st.session_state.user_email}")
+st.sidebar.success(f"👤 {st.session_state.user_email}")
 
-# SEKCOJA: CHMURA (WORKSPACE)
+# SEKCJA: CHMURA (WORKSPACE)
 st.sidebar.markdown("---")
 st.sidebar.header("☁️ Workspace (Google Drive)")
+col1, col2 = st.sidebar.columns(2)
 
-if st.sidebar.button("⬇️ Pobierz pliki z chmury", use_container_width=True):
+if col1.button("⬇️ Pobierz z chmury", use_container_width=True):
     with st.spinner("Łączenie z Drive..."):
-        cloud_files = workspace.load_workspace(st.session_state.user_email)
-        st.session_state.cloud_files = cloud_files
-        st.sidebar.success(f"Pobrano {len(cloud_files)} plików!")
+        st.session_state.cloud_files = workspace.load_workspace(st.session_state.user_email)
+        st.sidebar.success(f"Pobrano {len(st.session_state.cloud_files)} plików.")
 
-# SEKCOJA: WGRYWANIE LOKALNE
-st.sidebar.header("📁 Wgraj nowe dane")
-local_uploads = st.sidebar.file_uploader(
-    "Przeciągnij pliki .dat:", 
-    accept_multiple_files=True, 
-    type=['dat']
-)
+# SEKCJA: WGRYWANIE LOKALNE
+st.sidebar.header("📁 Wgraj dane lokalne")
+local_files = st.sidebar.file_uploader("Wybierz pliki .dat:", accept_multiple_files=True, type=['dat'])
 
-if local_uploads:
-    if st.sidebar.button("⬆️ Wyślij wgrane pliki do chmury", use_container_width=True):
-        with st.spinner("Synchronizacja..."):
-            workspace.sync_files(st.session_state.user_email, local_uploads)
-            st.sidebar.success("Zapisano w chmurze!")
+if local_files and col2.button("⬆️ Wyślij do chmury", use_container_width=True):
+    with st.spinner("Synchronizacja..."):
+        workspace.sync_files(st.session_state.user_email, local_files)
+        st.sidebar.success("Zapisano!")
 
-# Łączenie list plików (Lokalne + Chmura)
-cloud_list = st.session_state.get('cloud_files', [])
-all_files = (local_uploads if local_uploads else []) + cloud_list
-unique_files = {f.name: f for f in all_files if f.name.endswith('.dat')}
-dat_files = list(unique_files.values())
+# Łączenie list plików
+all_files = (local_files if local_files else []) + st.session_state.cloud_files
+unique_dict = {f.name: f for f in all_files if f.name.endswith('.dat')}
+dat_files = list(unique_dict.values())
 
 st.sidebar.markdown("---")
 st.sidebar.header("⚙️ Modelowanie")
 chosen_profile = st.sidebar.radio(
     "Profil dopasowania:", 
-    ["Gauss", "Lorentz", "Voigt (Splot)", "Asymetryczny"], 
-    help="Voigt to splot profilu Gaussa i Lorentza. Asymetryczny stosuje się dla stanów zlokalizowanych."
+    ["Gauss", "Lorentz", "Voigt (Splot)", "Asymetryczny"],
+    help="Splot (Voigt) zalecany dla większości półprzewodników."
 )
 
-# --- 7. GŁÓWNA LOGIKA WYBORU I ANALIZY ---
+# --- 8. LOGIKA WYBORU I ANALIZY ---
 if dat_files:
-    # Wybór pliku na górze
+    # Selektor pliku na górze strony
     selected_file = st.selectbox(
-        "📄 Wybierz pomiar do analizy:", 
+        "📄 Aktualnie analizowany pomiar:", 
         options=dat_files, 
         format_func=lambda x: x.name
     )
 
-    file_key = selected_file.name
-
-    # Ładowanie danych do pamięci podręcznej (tylko przy zmianie pliku)
-    if 'current_file_key' not in st.session_state or st.session_state.current_file_key != file_key:
-        with st.spinner(f'Analiza struktury {file_key}...'):
+    # Przeładowanie danych przy zmianie pliku
+    if st.session_state.current_file_key != selected_file.name:
+        with st.spinner(f"Przetwarzanie {selected_file.name}..."):
             data = data_loader.load_data(selected_file, config)
             st.session_state.processed_data = data
-            st.session_state.current_file_key = file_key
+            st.session_state.current_file_key = selected_file.name
             
-            # Auto-zakresy
+            # Reset zakresów osi
             wl, energy_ev = data[0], data[1]
             st.session_state.range_nm = (float(wl.min()), float(wl.max()))
             st.session_state.range_ev = (float(energy_ev.min()), float(energy_ev.max()))
 
-    # Rozpakowanie danych z sesji
+    # Rozpakowanie danych
     wl, energy_ev, cube, total_int, peak_energy_map, grid_size = st.session_state.processed_data
 
-    # --- 8. ZAKŁADKI ANALITYCZNE ---
+    # --- 9. ZAKŁADKI (TABS) ---
     tabs = st.tabs([
-        "🗺️ Mapa Intensywności", 
-        "📉 Dekonwolucja", 
-        "📊 Statystyka", 
-        "🎯 Defekty", 
-        "🤖 Auto-Fit", 
-        "🚀 Peak Finder"
+        "🗺️ Heat Mapy", "📉 Curve Fitting", "📊 Statystyki", 
+        "🎯 Defekty", "🤖 Auto-Fit", "🚀 Szukanie Pików"
     ])
 
     with tabs[0]:
         tab_eksploracja.render(cube, wl, energy_ev, total_int, peak_energy_map, grid_size, config)
     with tabs[1]:
-        # Tutaj przekazujemy wybrany profil (Splot/Asym itp.)
         tab_dekonwolucja.render(cube, wl, energy_ev, config, chosen_profile)
     with tabs[2]:
         tab_statystyki.render(cube, wl, energy_ev, peak_energy_map, config)
@@ -166,5 +170,4 @@ if dat_files:
         tab_savgol.render(cube, wl, energy_ev, total_int, grid_size, config)
 
 else:
-    st.info("💡 Brak danych. Wgraj pliki .dat z dysku lub pobierz je ze swojego Workspace'u w panelu bocznym.")
-    st.image("https://img.icons8.com/clouds/200/data-configuration.png") # Mała wizualizacja
+    st.info("👋 System gotowy. Wgraj pliki .dat w panelu bocznym lub pobierz dane ze swojego Workspace.")
