@@ -1,0 +1,29 @@
+# Ustawienia ścieżek
+paths:
+  data_folder: "/Users/laskowski/Artur/Grupa Badawcza/Analiza/d260416_JM_MK_AL1"
+
+# Definicje zakresów energetycznych (eV) dla 4 typów stanów
+energy_ranges:
+  X0: [2.06, 2.09]   # Ekscyton swobodny
+  XT: [2.03, 2.06]   # Trion
+  L:  [1.90, 2.03]   # Stany zlokalizowane
+  UK: [1.80, 1.90]   # Nieznane / Tło
+
+
+
+
+fitting_constraints:
+  gauss:
+    width: [0.015, 0.005, 0.05] # [init, min, max] dla sigmy
+    amplitude_factor: 1.5
+  lorentz:
+    width: [0.012, 0.003, 0.04] # [init, min, max] dla gammy
+    amplitude_factor: 2.0
+  voigt:
+    sigma: [0.01, 0.001, 0.05]  # Szerokość Gaussa
+    gamma: [0.01, 0.001, 0.05]  # Szerokość Lorentza
+    amplitude_factor: 2.0
+  asymexp:
+    w_he: [0.02, 0.005, 0.1]    # High-Energy width (W_HE)
+    w_le: [0.02, 0.005, 0.1]    # Low-Energy width (W_LE)
+    amplitude_factor: 3.0
