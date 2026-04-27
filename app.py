@@ -79,25 +79,39 @@ if 'axis_mode' not in st.session_state: st.session_state.axis_mode = "Energia (e
 # 4. PANEL BOCZNY (Sidebar)
 # =========================
 st.sidebar.success(f"Zalogowano: {st.session_state.user_email}")
+st.sidebar.header("☁️ Twoja Chmura (Workspace)")
+
+# Przycisk pobierania z Drive
+if st.sidebar.button("⬇️ Pobierz moje zapisane pliki", use_container_width=True):
+    with st.spinner("Pobieranie z Google Drive..."):
+        # Wywołujemy funkcję z nowego modułu workspace.py
+        cloud_files = workspace.load_workspace(st.session_state.user_email)
+        st.session_state.cloud_files = cloud_files
+        st.sidebar.success(f"Pobrano {len(cloud_files)} plików!")
+
+st.sidebar.markdown("---")
 st.sidebar.header("📁 Zarządzanie Danymi")
 
 uploaded_files = st.sidebar.file_uploader(
-    "Wgraj pliki z pomiarami (tylko .dat):", 
+    "Wgraj nowe pliki (.dat):", 
     accept_multiple_files=True,
     type=['dat']
 )
 
-# Filtrowanie tylko plików .dat
-dat_files = [f for f in uploaded_files if f.name.endswith('.dat')] if uploaded_files else []
+# Przycisk wysyłania do Drive (pojawia się tylko jak coś wgrasz)
+if uploaded_files:
+    if st.sidebar.button("⬆️ Zapisz te pliki w chmurze", use_container_width=True):
+        with st.spinner("Wysyłanie..."):
+            workspace.sync_files(st.session_state.user_email, uploaded_files)
+            st.sidebar.success("Zapisano bezpiecznie na Dysku!")
 
-st.sidebar.markdown("---")
-st.sidebar.header("⚙️ Model Matematyczny")
-chosen_profile = st.sidebar.radio(
-    "Profil dopasowania:", 
-    ["Gauss", "Lorentz", "Voigt", "AsymExp"], 
-    horizontal=True
-)
+# Łączymy pliki z komputera i z chmury w jedną listę do wyboru
+cloud_list = st.session_state.get('cloud_files', [])
+all_files = (uploaded_files if uploaded_files else []) + cloud_list
 
+# Usuwamy duplikaty po nazwie (żeby nie było dwóch plików o tej samej nazwie na liście)
+unique_files = {f.name: f for f in all_files if f.name.endswith('.dat')}
+dat_files = list(unique_files.values())
 # 5. GŁÓWNA LOGIKA WYBORU PLIKU I ŁADOWANIA
 # =========================================
 if dat_files:
