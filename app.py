@@ -89,10 +89,35 @@ with open("config.yaml", "r", encoding="utf-8") as f:
     config = yaml.safe_load(f)
 
 st.title("🔬 Analiza Widm Fotoluminescencji")
-
 # --- 7. PANEL BOCZNY (WORKSPACE & FILTRY) ---
 st.sidebar.title("🧬 Panel Sterowania")
 st.sidebar.success(f"👤 {st.session_state.user_email}")
+
+st.sidebar.markdown("---")
+st.sidebar.header("☁️ Workspace (Google Drive)")
+col1, col2 = st.sidebar.columns(2)
+
+# Pobieranie z chmury - dodajemy sprawdzanie czy funkcja istnieje
+if col1.button("⬇️ Pobierz", width='stretch'):
+    if hasattr(workspace, 'load_workspace'):
+        with st.spinner("Łączenie z Drive..."):
+            st.session_state.cloud_files = workspace.load_workspace(st.session_state.user_email)
+            st.sidebar.success(f"Pobrano {len(st.session_state.cloud_files)} plików.")
+    else:
+        st.error("Błąd: Moduł workspace nie załadował funkcji load_workspace")
+
+# Wgrywanie lokalne
+st.sidebar.header("📁 Wgraj dane lokalne")
+local_files = st.sidebar.file_uploader("Wybierz pliki .dat:", accept_multiple_files=True, type=['dat'])
+
+# Wysyłanie do chmury - sprawdzamy czy funkcja sync_files istnieje
+if local_files and col2.button("⬆️ Wyślij", width='stretch'):
+    if hasattr(workspace, 'sync_files'):
+        with st.spinner("Synchronizacja..."):
+            workspace.sync_files(st.session_state.user_email, local_files)
+            st.sidebar.success("Zapisano!")
+    else:
+        st.error("Błąd: Moduł workspace nie załadował funkcji sync_files")
 
 # SEKCJA: CHMURA (WORKSPACE)
 st.sidebar.markdown("---")
