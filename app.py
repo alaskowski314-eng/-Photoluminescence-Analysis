@@ -86,13 +86,13 @@ st.sidebar.success(f"👤 Zalogowano: {display_email}")
 
 # SEKCJA: CHMURA I PLIKI
 st.sidebar.markdown("---")
-st.sidebar.header("☁️ Workspace")
+st.sidebar.header("☁️ gdrive_sync.py")
 col1, col2 = st.sidebar.columns(2)
 
 # --- PRZYCISK POBIERANIA (naprawiony) ---
 if col1.button("⬇️ Pobierz", key="btn_pobierz_drive", width='stretch'):
     with st.spinner("Pobieranie danych z chmury..."):
-        st.session_state.cloud_files = workspace.load_workspace(st.session_state.user_email)
+        st.session_state.cloud_files = gdrive_sync.py.load_gdrive_sync.py(st.session_state.user_email)
         st.sidebar.success(f"Pobrano {len(st.session_state.cloud_files)} plików.")
 
 # --- WGRYWANIE LOKALNE (naprawione) ---
@@ -105,12 +105,12 @@ local_files = st.sidebar.file_uploader(
 
 # --- PRZYCISK WYSYŁANIA (naprawiony) ---
 if local_files and col2.button("⬆️ Wyślij", key="btn_sync_drive", width='stretch'):
-    if hasattr(workspace, 'sync_files'):
+    if hasattr(gdrive_sync.py, 'sync_files'):
         with st.spinner("Synchronizacja z Google Drive..."):
-            workspace.sync_files(st.session_state.user_email, local_files)
+            gdrive_sync.py.sync_files(st.session_state.user_email, local_files)
             st.sidebar.success("Zapisano w chmurze!")
     else:
-        st.sidebar.error("Błąd: Funkcja sync_files nieodnaleziona w pliku workspace.py")
+        st.sidebar.error("Błąd: Funkcja sync_files nieodnaleziona w pliku gdrive_sync.py.py")
 
 # POŁĄCZENIE PLIKÓW (Lokalne + Chmura)
 all_files = (local_files if local_files else []) + st.session_state.cloud_files
@@ -165,4 +165,4 @@ if dat_files:
     with tabs[5]: 
         tab_savgol.render(cube, wl, energy_ev, total_int, grid_size, config)
 else:
-    st.info("👋 Witaj! Aby rozpocząć, wgraj pliki `.dat` z komputera lub pobierz je ze swojego Workspace'a w chmurze.")
+    st.info("👋 Witaj! Aby rozpocząć, wgraj pliki `.dat` z komputera lub pobierz je ze swojego gdrive_sync.py'a w chmurze.")
