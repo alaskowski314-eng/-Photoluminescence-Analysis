@@ -1,6 +1,5 @@
 streamlit
-numpy
 pandas
-plotly
+numpy
 scipy
-pyyaml
+PyYAML
