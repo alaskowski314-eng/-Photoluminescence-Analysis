@@ -31,6 +31,10 @@ if 'current_file_key' not in st.session_state: st.session_state.current_file_key
 if 'processed_data' not in st.session_state: st.session_state.processed_data = None
 if 'current_wl' not in st.session_state: st.session_state.current_wl = 615.0
 
+# DODAJ TE DWIE LINIJKI:
+if 'click_x' not in st.session_state: st.session_state.click_x = 0
+if 'click_y' not in st.session_state: st.session_state.click_y = 0
+
 # --- 4. BEZPIECZNE LOGOWANIE DO SHEETS ---
 def log_user_to_sheets(email):
     try:
