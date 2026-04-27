@@ -56,29 +56,27 @@ def sync_files(email, uploaded_files):
         # Dodajemy supportsAllDrives na wypadek, gdyby to był dysk współdzielony (częsty powód błędów)
         res = service.files().list(q=query, fields="files(id)", supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
         
-        media = MediaIoBaseUpload(io.BytesIO(file_bytes), mimetype='application/octet-stream', resumable=False)
-        
-        try:
-            if res.get('files'):
-                service.files().update(
-                    fileId=res['files'][0]['id'], 
-                    media_body=media,
-                    supportsAllDrives=True
-                ).execute()
-            else:
-                file_metadata = {'name': uf.name, 'parents': [folder_id]}
-                service.files().create(
-                    body=file_metadata, 
-                    media_body=media,
-                    supportsAllDrives=True
-                ).execute()
-                
-        except Exception as e:
-            # To wyciągnie ukryty błąd Google'a i wyświetli go w aplikacji!
-            if hasattr(e, 'content'):
-                st.sidebar.error(f"Szczegóły błędu Google: {e.content.decode('utf-8')}")
-            else:
-                st.sidebar.error(f"Błąd wysyłania: {str(e)}")
+        media = MediaIoBaseUpload(
+            io.BytesIO(file_bytes), 
+            mimetype='application/octet-stream', 
+            resumable=False  # To jest kluczowe dla małych plików i limitów bota
+        )
+
+        file_metadata = {
+            'name': uf.name, 
+            'parents': [folder_id]
+        }
+
+        service.files().create(
+            body=file_metadata, 
+            media_body=media,
+            fields='id').execute()
+
+
+
+
+
+
 def load_workspace(email):
     """Pobiera pliki z Dysku Google"""
     service = get_service()
